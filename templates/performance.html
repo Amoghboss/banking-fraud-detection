@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Machine Learning Model Performance & Benchmark{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between pb-3 mb-4 border-bottom">
+        <div>
+            <h2 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-brain text-primary"></i>
+                Machine Learning Algorithm Benchmark & Performance
+            </h2>
+            <p class="text-muted small mb-0">Empirical comparison across 5 supervised and anomaly detection algorithms on 284,807 transactions</p>
+        </div>
+        <span class="badge bg-primary px-3 py-2 fs-6">
+            <i class="fa-solid fa-trophy me-1"></i> Best Model: Random Forest
+        </span>
+    </div>
+
+    <!-- Academic Evaluation Note Alert -->
+    <div class="alert alert-primary border-primary d-flex align-items-start gap-3 shadow-sm mb-4">
+        <i class="fa-solid fa-scale-balanced fs-3 text-primary mt-1"></i>
+        <div class="small">
+            <h6 class="fw-bold mb-1">Class Imbalance Evaluation Methodology:</h6>
+            Financial fraud represents only <strong>0.172%</strong> of all transactions. Relying solely on raw accuracy is misleading, as a trivial dummy model predicting 100% legitimate achieves 99.83% accuracy while failing to detect any fraud. In our industry-standard evaluation, we prioritize <strong>Recall (Fraud Detection Rate)</strong>, <strong>Precision</strong>, <strong>F1-Score</strong>, and <strong>PR-AUC (Precision-Recall Area Under Curve)</strong>.
+        </div>
+    </div>
+
+    <!-- Algorithm Comparison Table Card -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4 overflow-hidden">
+        <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0">
+                <i class="fa-solid fa-table-list text-info me-2"></i> Comparative Evaluation Metrics (Test Set: N=56,962, Actual Frauds=98)
+            </h6>
+            <span class="badge bg-secondary">Stratified 80/20 Split</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sentinel mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Algorithm</th>
+                            <th>Accuracy</th>
+                            <th>Fraud Precision</th>
+                            <th>Fraud Recall</th>
+                            <th>F1-Score</th>
+                            <th>ROC-AUC</th>
+                            <th>PR-AUC</th>
+                            <th>Train Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for model_name, m in metrics.items() %}
+                        <tr class="{% if model_name == 'Random Forest' %}table-primary fw-semibold{% endif %}">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fa-solid {% if model_name == 'Random Forest' %}fa-tree text-success{% elif model_name == 'Logistic Regression' %}fa-chart-line text-primary{% elif model_name == 'Decision Tree' %}fa-diagram-project text-warning{% elif model_name == 'Support Vector Machine' %}fa-vector-square text-info{% else %}fa-satellite-dish text-danger{% endif %}"></i>
+                                    <span>{{ model_name }}</span>
+                                </div>
+                            </td>
+                            <td>{{ "%.4f"|format(m.accuracy) }}</td>
+                            <td>{{ "%.4f"|format(m.precision) }}</td>
+                            <td>
+                                <span class="badge {% if m.recall > 0.8 %}bg-success{% elif m.recall > 0.5 %}bg-warning text-dark{% else %}bg-secondary{% endif %} px-2 py-1">
+                                    {{ "%.2f"|format(m.recall * 100) }}%
+                                </span>
+                            </td>
+                            <td><strong>{{ "%.4f"|format(m.f1_score) }}</strong></td>
+                            <td>{{ "%.4f"|format(m.roc_auc) }}</td>
+                            <td>
+                                <strong class="text-danger">{{ "%.4f"|format(m.pr_auc) }}</strong>
+                            </td>
+                            <td class="text-muted small">{{ m.training_time_sec }}s</td>
+                            <td>
+                                {% if model_name == 'Random Forest' %}
+                                    <span class="badge bg-success text-white"><i class="fa-solid fa-check-double me-1"></i> Selected & Deployed</span>
+                                {% else %}
+                                    <span class="badge bg-light text-secondary border">Evaluated</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visual Performance Plots Grid -->
+    <h5 class="fw-bold text-dark mb-3 mt-4">
+        <i class="fa-solid fa-chart-simple text-primary me-2"></i> Empirical Performance Visualizations
+    </h5>
+    
+    <div class="row g-4 mb-4">
+        <!-- ROC Curve Image -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-bezier-curve text-primary me-2"></i> Receiver Operating Characteristic (ROC) Curves
+                    </h6>
+                </div>
+                <div class="card-body text-center p-3">
+                    <img src="{{ url_for('static', filename='images/roc_curves.png') }}" alt="ROC Curves" class="img-fluid rounded border shadow-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- PR Curve Image -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-chart-line text-primary me-2"></i> Precision-Recall Curves (Extreme Imbalance Metric)
+                    </h6>
+                </div>
+                <div class="card-body text-center p-3">
+                    <img src="{{ url_for('static', filename='images/pr_curves.png') }}" alt="Precision Recall Curves" class="img-fluid rounded border shadow-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- Confusion Matrices Grid Image -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-table-cells text-primary me-2"></i> Confusion Matrix Heatmaps Across All Algorithms
+                    </h6>
+                </div>
+                <div class="card-body text-center p-3">
+                    <img src="{{ url_for('static', filename='images/confusion_matrices.png') }}" alt="Confusion Matrices" class="img-fluid rounded border shadow-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Importance Image -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-ranking-star text-primary me-2"></i> Random Forest Gini Feature Importances (Top 15)
+                    </h6>
+                </div>
+                <div class="card-body text-center p-3">
+                    <img src="{{ url_for('static', filename='images/feature_importance.png') }}" alt="Feature Importance" class="img-fluid rounded border shadow-sm">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

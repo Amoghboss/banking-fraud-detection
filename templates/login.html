@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Administrator Login{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+        <div class="col-md-5 col-lg-4">
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                <!-- Card Header -->
+                <div class="p-4 text-center text-white" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);">
+                    <div class="d-inline-flex p-3 rounded-circle bg-white bg-opacity-10 mb-3">
+                        <i class="fa-solid fa-building-columns text-white fs-2"></i>
+                    </div>
+                    <h4 class="fw-bold mb-1">Banking Fraud Sentinel</h4>
+                    <p class="text-white-50 small mb-0">Authorized Administrator Access Portal</p>
+                </div>
+
+                <!-- Login Form -->
+                <div class="card-body p-4 bg-white">
+                    <form method="POST" action="{{ url_for('auth.login') }}">
+                        <div class="mb-3">
+                            <label for="username" class="form-label small fw-bold text-secondary">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted">
+                                    <i class="fa-solid fa-user"></i>
+                                </span>
+                                <input type="text" class="form-control bg-light border-start-0" id="username" name="username" placeholder="Enter administrator username" required autofocus value="admin">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label small fw-bold text-secondary">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted">
+                                    <i class="fa-solid fa-lock"></i>
+                                </span>
+                                <input type="password" class="form-control bg-light border-start-0" id="password" name="password" placeholder="Enter secure password" required value="Admin@2026!">
+                                <button class="btn btn-light border border-start-0" type="button" onclick="togglePasswordVisibility()">
+                                    <i class="fa-regular fa-eye text-muted" id="pwdToggleIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary py-2 fw-semibold shadow-sm" style="background-color: #1e3a8a; border-color: #1e3a8a;">
+                                <i class="fa-solid fa-right-to-bracket me-2"></i> Authenticate & Enter
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Security Credentials Pill -->
+                    <div class="p-3 bg-light rounded-3 border text-center small text-secondary">
+                        <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                            <i class="fa-solid fa-key text-warning"></i>
+                            <strong class="text-dark">Default Admin Credentials</strong>
+                        </div>
+                        <div>User: <code class="text-primary fw-bold">admin</code> | Pass: <code class="text-primary fw-bold">Admin@2026!</code></div>
+                    </div>
+                </div>
+
+                <!-- Card Footer -->
+                <div class="card-footer bg-light p-3 text-center text-muted small border-top">
+                    <i class="fa-solid fa-shield-cat me-1 text-success"></i> 256-bit PBKDF2 Session Security Active
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function togglePasswordVisibility() {
+    const pwdInput = document.getElementById('password');
+    const icon = document.getElementById('pwdToggleIcon');
+    if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        pwdInput.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+</script>
+{% endblock %}

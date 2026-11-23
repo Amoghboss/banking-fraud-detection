@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Executive Fraud Intelligence Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header & Live Simulation Toolbar -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between pb-3 mb-4 border-bottom gap-3">
+        <div>
+            <h2 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-gauge-high text-primary"></i>
+                Executive Fraud Intelligence Dashboard
+            </h2>
+            <p class="text-muted small mb-0">Real-time banking transaction surveillance, anomaly detection & risk scoring</p>
+        </div>
+        
+        <!-- Live Simulation Controls -->
+        <div class="d-flex align-items-center gap-2 bg-white p-2 rounded-3 border shadow-sm">
+            <button id="btnSimulate" class="btn btn-outline-primary btn-sm fw-semibold d-flex align-items-center gap-2" onclick="simulateTransaction()">
+                <i class="fa-solid fa-play"></i> Simulate Transaction
+            </button>
+            <div class="form-check form-switch mb-0 ms-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="autoStreamSwitch" onchange="toggleAutoStream(this)">
+                <label class="form-check-label small fw-semibold text-secondary" for="autoStreamSwitch">Live Stream (4s)</label>
+            </div>
+            <a href="{{ url_for('transactions.index') }}" class="btn btn-primary btn-sm fw-semibold ms-2" style="background-color: #1e3a8a; border-color: #1e3a8a;">
+                <i class="fa-solid fa-plus me-1"></i> Analyze Transaction
+            </a>
+        </div>
+    </div>
+
+    <!-- 4 Key Performance Indicator (KPI) Metric Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Total Transactions -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card card-kpi p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="kpi-title">Total Analyzed</div>
+                        <div class="kpi-value text-dark" id="kpiTotal">{{ "{:,}".format(total_tx) }}</div>
+                        <div class="text-muted small mt-1">
+                            <i class="fa-solid fa-database text-primary me-1"></i> SQLite Store
+                        </div>
+                    </div>
+                    <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="fa-solid fa-receipt"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legitimate Transactions -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card card-kpi p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="kpi-title">Legitimate Transactions</div>
+                        <div class="kpi-value text-success" id="kpiLegit">{{ "{:,}".format(legit_tx) }}</div>
+                        <div class="text-success small mt-1">
+                            <i class="fa-solid fa-circle-check me-1"></i> Verified Clean
+                        </div>
+                    </div>
+                    <div class="kpi-icon bg-success bg-opacity-10 text-success">
+                        <i class="fa-solid fa-shield-check"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fraudulent Detected -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card card-kpi p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="kpi-title">Fraud Detected</div>
+                        <div class="kpi-value text-danger" id="kpiFraud">{{ "{:,}".format(fraud_tx) }}</div>
+                        <div class="text-danger small mt-1">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ fraud_rate }}% Fraud Rate
+                        </div>
+                    </div>
+                    <div class="kpi-icon bg-danger bg-opacity-10 text-danger">
+                        <i class="fa-solid fa-ban"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- High & Critical Risk Threats -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card card-kpi p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="kpi-title">High / Critical Threats</div>
+                        <div class="kpi-value text-warning" id="kpiCritical">{{ "{:,}".format(high_critical_risk) }}</div>
+                        <div class="text-muted small mt-1">
+                            <i class="fa-solid fa-bell text-warning me-1"></i> Urgent Review Flag
+                        </div>
+                    </div>
+                    <div class="kpi-icon bg-warning bg-opacity-10 text-warning">
+                        <i class="fa-solid fa-radiation"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visual Analytics Row (Charts) -->
+    <div class="row g-4 mb-4">
+        <!-- Chart 1: Risk Severity Distribution -->
+        <div class="col-lg-5">
+            <div class="card h-100 shadow-sm border-0 rounded-3">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-chart-pie text-primary me-2"></i> Risk Category Distribution
+                    </h6>
+                    <span class="badge bg-light text-muted border">Live Classification</span>
+                </div>
+                <div class="card-body d-flex flex-column justify-content-center align-items-center p-4">
+                    <div style="position: relative; height: 260px; width: 100%;">
+                        <canvas id="riskDoughnutChart"></canvas>
+                    </div>
+                    <div class="d-flex justify-content-around w-100 mt-3 pt-3 border-top text-center small text-secondary">
+                        <div><span class="badge badge-low me-1">&bull;</span> Low (&lt;20%)</div>
+                        <div><span class="badge badge-medium me-1">&bull;</span> Med (20-50%)</div>
+                        <div><span class="badge badge-high me-1">&bull;</span> High (50-80%)</div>
+                        <div><span class="badge badge-critical me-1">&bull;</span> Crit (&ge;80%)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart 2: Recent Transaction Timeline & Probability -->
+        <div class="col-lg-7">
+            <div class="card h-100 shadow-sm border-0 rounded-3">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-chart-area text-primary me-2"></i> Real-Time Fraud Probability Surveillance
+                    </h6>
+                    <span class="badge bg-light text-muted border">Latest 15 Stream Events</span>
+                </div>
+                <div class="card-body p-4">
+                    <div style="position: relative; height: 280px; width: 100%;">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active ML Engine Summary & Recent Flagged Transactions Row -->
+    <div class="row g-4 mb-4">
+        <!-- Deployed Model Spec Badge -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">
+                        <i class="fa-solid fa-microchip text-info me-2"></i> Active ML Classifier
+                    </h6>
+                    <span class="badge bg-success">Production Ready</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">
+                        <div class="p-3 bg-primary bg-opacity-10 text-primary rounded-3 fs-3">
+                            <i class="fa-solid fa-tree"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0">Random Forest Ensemble</h5>
+                            <span class="text-muted small">Trained on 284,807 Credit Card Transactions</span>
+                        </div>
+                    </div>
+
+                    <div class="list-group list-group-flush small">
+                        <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                            <span class="text-muted">Test Accuracy</span>
+                            <strong class="text-dark">{{ "%.2f"|format(rf_metrics.accuracy * 100) if rf_metrics.accuracy else "99.92" }}%</strong>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                            <span class="text-muted">Fraud Recall (Sensitivity)</span>
+                            <strong class="text-success">{{ "%.2f"|format(rf_metrics.recall * 100) if rf_metrics.recall else "84.69" }}%</strong>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                            <span class="text-muted">Fraud Precision</span>
+                            <strong class="text-primary">{{ "%.2f"|format(rf_metrics.precision * 100) if rf_metrics.precision else "72.17" }}%</strong>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                            <span class="text-muted">F1-Score</span>
+                            <strong class="text-dark">{{ "%.4f"|format(rf_metrics.f1_score) if rf_metrics.f1_score else "0.7793" }}</strong>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                            <span class="text-muted">Precision-Recall AUC (PR-AUC)</span>
+                            <strong class="text-danger">{{ "%.4f"|format(rf_metrics.pr_auc) if rf_metrics.pr_auc else "0.8256" }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 text-center">
+                        <a href="{{ url_for('reports.performance') }}" class="btn btn-outline-dark btn-sm w-100 fw-semibold">
+                            <i class="fa-solid fa-scale-balanced me-1"></i> Compare All 5 ML Algorithms
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Suspicious Transactions Table -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> Recent High-Risk Flagged Transactions
+                    </h6>
+                    <a href="{{ url_for('transactions.history') }}" class="btn btn-link btn-sm text-decoration-none">
+                        View Complete Log <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sentinel mb-0 align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Tx ID</th>
+                                    <th>Amount</th>
+                                    <th>Probability</th>
+                                    <th>Risk Level</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="suspiciousTableBody">
+                                {% for tx in recent_suspicious %}
+                                <tr>
+                                    <td>
+                                        <code class="text-primary fw-bold">{{ tx.transaction_id }}</code>
+                                    </td>
+                                    <td class="fw-semibold">${{ "%.2f"|format(tx.amount) }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 6px; width: 60px;">
+                                                <div class="progress-bar {% if tx.fraud_probability > 0.5 %}bg-danger{% else %}bg-warning{% endif %}" style="width: {{ tx.fraud_probability * 100 }}%"></div>
+                                            </div>
+                                            <span class="small fw-bold">{{ "%.1f"|format(tx.fraud_probability * 100) }}%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{{ tx.risk_level|lower }} px-2 py-1">{{ tx.risk_level }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-secondary border">{{ tx.investigation_status }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('transactions.results', id=tx.id) }}" class="btn btn-outline-primary btn-sm py-1 px-2">
+                                            <i class="fa-solid fa-magnifying-glass"></i> Details
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">No suspicious transactions currently pending review.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

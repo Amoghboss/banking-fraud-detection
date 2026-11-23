@@ -1,0 +1,97 @@
+{
+    "Logistic Regression": {
+        "accuracy": 0.9755,
+        "precision": 0.0609,
+        "recall": 0.9184,
+        "f1_score": 0.1142,
+        "roc_auc": 0.972,
+        "pr_auc": 0.7175,
+        "confusion_matrix": [
+            [
+                55476,
+                1388
+            ],
+            [
+                8,
+                90
+            ]
+        ],
+        "training_time_sec": 1.5
+    },
+    "Decision Tree": {
+        "accuracy": 0.9805,
+        "precision": 0.069,
+        "recall": 0.8265,
+        "f1_score": 0.1274,
+        "roc_auc": 0.9075,
+        "pr_auc": 0.4749,
+        "confusion_matrix": [
+            [
+                55771,
+                1093
+            ],
+            [
+                17,
+                81
+            ]
+        ],
+        "training_time_sec": 8.11
+    },
+    "Random Forest": {
+        "accuracy": 0.9992,
+        "precision": 0.7217,
+        "recall": 0.8469,
+        "f1_score": 0.7793,
+        "roc_auc": 0.9775,
+        "pr_auc": 0.8256,
+        "confusion_matrix": [
+            [
+                56832,
+                32
+            ],
+            [
+                15,
+                83
+            ]
+        ],
+        "training_time_sec": 22.8
+    },
+    "Support Vector Machine": {
+        "accuracy": 0.999,
+        "precision": 0.8028,
+        "recall": 0.5816,
+        "f1_score": 0.6746,
+        "roc_auc": 0.9742,
+        "pr_auc": 0.7346,
+        "confusion_matrix": [
+            [
+                56850,
+                14
+            ],
+            [
+                41,
+                57
+            ]
+        ],
+        "training_time_sec": 9.01
+    },
+    "Isolation Forest": {
+        "accuracy": 0.9976,
+        "precision": 0.3113,
+        "recall": 0.3367,
+        "f1_score": 0.3235,
+        "roc_auc": 0.9543,
+        "pr_auc": 0.218,
+        "confusion_matrix": [
+            [
+                56791,
+                73
+            ],
+            [
+                65,
+                33
+            ]
+        ],
+        "training_time_sec": 2.37
+    }
+}

@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction Analysis & Fraud Inference{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between pb-3 mb-4 border-bottom">
+        <div>
+            <h2 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-magnifying-glass-dollar text-primary"></i>
+                Transaction Fraud Analysis
+            </h2>
+            <p class="text-muted small mb-0">Evaluate individual financial operations or ingest CSV batches for model classification</p>
+        </div>
+        <a href="{{ url_for('transactions.history') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fa-solid fa-clock-rotate-left me-1"></i> View History
+        </a>
+    </div>
+
+    <!-- Nav Tabs for Single vs Bulk Analysis -->
+    <ul class="nav nav-pills mb-4 gap-2" id="analysisTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active px-4 py-2 fw-semibold shadow-sm" id="single-tab" data-bs-toggle="pill" data-bs-target="#single-pane" type="button" role="tab">
+                <i class="fa-solid fa-calculator me-2"></i> Single Transaction Evaluation
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link px-4 py-2 fw-semibold shadow-sm" id="bulk-tab" data-bs-toggle="pill" data-bs-target="#bulk-pane" type="button" role="tab">
+                <i class="fa-solid fa-file-csv me-2"></i> Bulk CSV Batch Upload
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="analysisTabsContent">
+        <!-- TAB 1: Single Transaction Analysis -->
+        <div class="tab-pane fade show active" id="single-pane" role="tabpanel">
+            <div class="card form-card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="fa-solid fa-sliders text-primary me-2"></i> Manual Transaction Parameters
+                    </h6>
+                    <!-- Autofill Helpers -->
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-success btn-sm fw-semibold" onclick="autofillSample('normal')">
+                            <i class="fa-solid fa-check me-1"></i> Autofill Legitimate Sample
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm fw-semibold" onclick="autofillSample('fraud')">
+                            <i class="fa-solid fa-skull-crossbones me-1"></i> Autofill Fraud Sample
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('transactions.predict_single') }}" id="singleForm">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label for="tx_id" class="form-label small fw-bold text-secondary">Transaction Reference ID</label>
+                                <input type="text" class="form-control" id="tx_id" name="transaction_id" placeholder="e.g. TXN-89472A" value="TXN-{{ range(10000, 99999)|random }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="amount" class="form-label small fw-bold text-secondary">Transaction Amount ($)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" step="0.01" min="0" class="form-control" id="amount" name="amount" required value="75.50">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="time" class="form-label small fw-bold text-secondary">Elapsed Time Offset (Seconds)</label>
+                                <input type="number" step="1" min="0" class="form-control" id="time" name="time" required value="40960">
+                            </div>
+                        </div>
+
+                        <!-- Top Diagnostic Feature Predictors -->
+                        <div class="p-3 bg-light rounded-3 border mb-4">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h6 class="fw-bold text-dark mb-0">
+                                    <i class="fa-solid fa-stethoscope text-primary me-2"></i> Key Diagnostic Indicators (Top Correlated PCA Factors)
+                                </h6>
+                                <span class="badge bg-secondary">Critical Fraud Markers</span>
+                            </div>
+                            <p class="text-muted small mb-3">
+                                Features <strong>V14, V12, V10, V17</strong> show strong negative correlation with fraud; extreme negative values indicate compromise. Feature <strong>V4</strong> shows strong positive correlation.
+                            </p>
+
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold text-secondary">V14 (Top Factor)</label>
+                                    <input type="number" step="0.001" class="form-control form-control-sm" id="v14" name="V14" value="0.12">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold text-secondary">V12</label>
+                                    <input type="number" step="0.001" class="form-control form-control-sm" id="v12" name="V12" value="-0.08">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold text-secondary">V10</label>
+                                    <input type="number" step="0.001" class="form-control form-control-sm" id="v10" name="V10" value="0.05">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold text-secondary">V17</label>
+                                    <input type="number" step="0.001" class="form-control form-control-sm" id="v17" name="V17" value="-0.15">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold text-secondary">V4</label>
+                                    <input type="number" step="0.001" class="form-control form-control-sm" id="v4" name="V4" value="0.22">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold text-secondary">V11</label>
+                                    <input type="number" step="0.001" class="form-control form-control-sm" id="v11" name="V11" value="-0.04">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Collapsible Full 28 PCA Features Accordion -->
+                        <div class="accordion mb-4" id="pcaAccordion">
+                            <div class="accordion-item border rounded-3 overflow-hidden">
+                                <h2 class="accordion-header" id="headingPCA">
+                                    <button class="accordion-button collapsed bg-white fw-semibold text-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePCA">
+                                        <i class="fa-solid fa-layer-group text-primary me-2"></i> Extended PCA Dimensions (V1 through V28)
+                                    </button>
+                                </h2>
+                                <div id="collapsePCA" class="accordion-collapse collapse" data-bs-parent="#pcaAccordion">
+                                    <div class="accordion-body bg-light">
+                                        <div class="row g-2">
+                                            {% for i in range(1, 29) %}
+                                            <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                                                <label class="form-label small text-muted mb-1">V{{ i }}</label>
+                                                <input type="number" step="0.001" class="form-control form-control-sm" id="v{{ i }}" name="V{{ i }}" value="0.00">
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="reset" class="btn btn-light border px-4">
+                                <i class="fa-solid fa-rotate-left me-1"></i> Reset
+                            </button>
+                            <button type="submit" class="btn btn-primary px-4 fw-semibold" style="background-color: #1e3a8a; border-color: #1e3a8a;">
+                                <i class="fa-solid fa-shield-halved me-1"></i> Execute Fraud Inference
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Bulk CSV Batch Upload -->
+        <div class="tab-pane fade" id="bulk-pane" role="tabpanel">
+            <div class="card form-card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="fa-solid fa-cloud-arrow-up text-primary me-2"></i> Ingest CSV Transaction Batch
+                    </h6>
+                    <button class="btn btn-outline-primary btn-sm fw-semibold" onclick="downloadSampleCsv()">
+                        <i class="fa-solid fa-download me-1"></i> Download Sample CSV
+                    </button>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="alert alert-info border-info d-flex align-items-center gap-2 mb-4">
+                        <i class="fa-solid fa-circle-info fs-5"></i>
+                        <div class="small">
+                            <strong>CSV Format Requirement:</strong> The file must contain at least the <code>Amount</code> column. Optional columns include <code>Time</code> and PCA dimensions <code>V1</code> through <code>V28</code>. Batch capacity allows up to 5,000 transactions per upload.
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('transactions.predict_bulk') }}" enctype="multipart/form-data">
+                        <div class="p-5 border-2 border-dashed rounded-4 text-center bg-light mb-4">
+                            <i class="fa-solid fa-file-csv text-primary fs-1 mb-3"></i>
+                            <h5 class="fw-bold text-dark">Choose or Drag CSV Transaction File</h5>
+                            <p class="text-muted small mb-3">Compatible with Kaggle credit card fraud schemas or exported core banking feeds</p>
+                            
+                            <div class="d-inline-block">
+                                <input class="form-control" type="file" id="csv_file" name="csv_file" accept=".csv" required>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold" style="background-color: #1e3a8a; border-color: #1e3a8a;">
+                                <i class="fa-solid fa-gears me-1"></i> Ingest & Classify Batch
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function autofillSample(type) {
+    if (type === 'normal') {
+        document.getElementById('amount').value = (Math.random() * 85 + 10).toFixed(2);
+        document.getElementById('time').value = Math.floor(Math.random() * 80000 + 1000);
+        document.getElementById('v14').value = "0.15";
+        document.getElementById('v12').value = "-0.08";
+        document.getElementById('v10').value = "0.10";
+        document.getElementById('v17').value = "-0.05";
+        document.getElementById('v4').value = "0.18";
+        document.getElementById('v11').value = "-0.12";
+    } else if (type === 'fraud') {
+        document.getElementById('amount').value = (Math.random() * 1200 + 350).toFixed(2);
+        document.getElementById('time').value = Math.floor(Math.random() * 80000 + 1000);
+        // Severe negative markers characteristic of true fraud in ULB dataset
+        document.getElementById('v14').value = "-8.95";
+        document.getElementById('v12').value = "-6.20";
+        document.getElementById('v10').value = "-5.40";
+        document.getElementById('v17').value = "-7.10";
+        document.getElementById('v4').value = "4.85";
+        document.getElementById('v11').value = "3.90";
+    }
+}
+
+function downloadSampleCsv() {
+    const headers = ["Time", "V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10", "V11", "V12", "V13", "V14", "V15", "V16", "V17", "V18", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "V27", "V28", "Amount"];
+    
+    // Sample legitimate row
+    const legitRow = [1200, 0.1, -0.2, 0.3, 0.1, -0.1, 0.05, 0.12, -0.04, 0.08, 0.15, -0.1, -0.05, 0.2, 0.12, 0.05, -0.02, -0.08, 0.1, -0.05, 0.02, -0.01, 0.03, -0.02, 0.01, -0.03, 0.02, 0.01, -0.01, 45.50];
+    // Sample fraud row (extreme V14, V12, V10, V4)
+    const fraudRow = [2400, -1.2, 2.5, -3.1, 4.5, -2.1, -1.8, -3.2, 1.4, -2.5, -5.8, 3.8, -6.5, -0.5, -9.2, -0.8, -4.5, -7.2, -2.5, 1.2, 0.8, 0.9, -0.4, -0.2, 0.1, -0.3, 0.5, 0.8, 0.2, 980.00];
+    
+    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
+    csvContent += legitRow.join(",") + "\n";
+    csvContent += fraudRow.join(",") + "\n";
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "sample_banking_transactions.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}

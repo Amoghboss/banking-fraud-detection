@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Fraud Detection Result - {{ tx.transaction_id }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between pb-3 mb-4 border-bottom">
+        <div>
+            <span class="badge bg-secondary mb-1">Inference Report</span>
+            <h2 class="fw-bold text-dark mb-0">Fraud Risk Assessment: {{ tx.transaction_id }}</h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('transactions.index') }}" class="btn btn-outline-primary btn-sm">
+                <i class="fa-solid fa-plus me-1"></i> Analyze Another
+            </a>
+            <a href="{{ url_for('transactions.history') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i> Transaction Log
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Results Hero Card -->
+    <div class="row g-4 mb-4">
+        <!-- Hero Verdict Card -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden h-100">
+                <div class="p-4 text-white {% if tx.is_fraud %}bg-danger bg-gradient{% else %}bg-success bg-gradient{% endif %}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="badge bg-white text-dark mb-2 fw-bold text-uppercase px-3 py-1">
+                                ML Model Classification
+                            </span>
+                            <h3 class="fw-bold mb-1">
+                                {% if tx.is_fraud %}
+                                    <i class="fa-solid fa-triangle-exclamation me-2"></i> POTENTIAL FRAUD DETECTED
+                                {% else %}
+                                    <i class="fa-solid fa-circle-check me-2"></i> LEGITIMATE TRANSACTION
+                                {% endif %}
+                            </h3>
+                            <p class="text-white-50 small mb-0">Analyzed against production Random Forest Decision Boundaries</p>
+                        </div>
+                        <div class="fs-1 opacity-75">
+                            {% if tx.is_fraud %}
+                                <i class="fa-solid fa-shield-virus"></i>
+                            {% else %}
+                                <i class="fa-solid fa-shield-halved"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4 bg-white">
+                    <!-- Risk Probability Gauge -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-secondary small">Calculated Fraud Probability</span>
+                            <span class="fs-4 fw-bold {% if tx.is_fraud %}text-danger{% else %}text-success{% endif %}">
+                                {{ "%.2f"|format(tx.fraud_probability * 100) }}%
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 14px;">
+                            <div class="progress-bar {% if tx.fraud_probability >= 0.8 %}bg-danger{% elif tx.fraud_probability >= 0.5 %}bg-warning{% elif tx.fraud_probability >= 0.2 %}bg-info{% else %}bg-success{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ tx.fraud_probability * 100 }}%">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small mt-1">
+                            <span>0% (Clean)</span>
+                            <span>20% (Low)</span>
+                            <span>50% (Medium)</span>
+                            <span>80% (High)</span>
+                            <span>100% (Critical)</span>
+                        </div>
+                    </div>
+
+                    <!-- Risk Level & Amount Pills -->
+                    <div class="row g-3 text-center mb-4">
+                        <div class="col-4">
+                            <div class="p-3 bg-light rounded-3 border">
+                                <div class="text-muted small fw-semibold">Amount</div>
+                                <div class="fs-5 fw-bold text-dark">${{ "%.2f"|format(tx.amount) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 bg-light rounded-3 border">
+                                <div class="text-muted small fw-semibold">Risk Category</div>
+                                <div class="fs-5 fw-bold">
+                                    <span class="badge badge-{{ tx.risk_level|lower }} px-2 py-1">{{ tx.risk_level }} Risk</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 bg-light rounded-3 border">
+                                <div class="text-muted small fw-semibold">Surveillance State</div>
+                                <div class="fs-6 fw-bold mt-1">
+                                    <span class="badge bg-light text-secondary border">{{ tx.investigation_status }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Explainable AI Contributing Indicators -->
+                    <div class="p-3 bg-light rounded-3 border">
+                        <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-list-check text-primary"></i> Contributing Risk Indicators & Diagnostic Signals
+                        </h6>
+                        <ul class="mb-0 small text-secondary ps-3">
+                            {% for indicator in tx.get_indicators() %}
+                            <li class="mb-1">{{ indicator }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Investigation & Admin Action Card -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-user-shield text-primary me-2"></i> Security Analyst Actions
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('transactions.investigate', id=tx.id) }}">
+                        <div class="mb-3">
+                            <label for="investigation_status" class="form-label small fw-bold text-secondary">Update Status</label>
+                            <select class="form-select" id="investigation_status" name="investigation_status">
+                                <option value="Pending Review" {% if tx.investigation_status == 'Pending Review' %}selected{% endif %}>Pending Review</option>
+                                <option value="Confirmed Fraud" {% if tx.investigation_status == 'Confirmed Fraud' %}selected{% endif %}>Confirmed Fraud</option>
+                                <option value="False Positive" {% if tx.investigation_status == 'False Positive' %}selected{% endif %}>False Positive (Clean)</option>
+                                <option value="Resolved" {% if tx.investigation_status == 'Resolved' %}selected{% endif %}>Resolved / Case Closed</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="admin_notes" class="form-label small fw-bold text-secondary">Analyst Investigation Notes</label>
+                            <textarea class="form-control" id="admin_notes" name="admin_notes" rows="4" placeholder="Document investigation findings, cardholder contact notes, or chargeback actions...">{{ tx.admin_notes or '' }}</textarea>
+                        </div>
+
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary fw-semibold" style="background-color: #1e3a8a; border-color: #1e3a8a;">
+                                <i class="fa-solid fa-floppy-disk me-1"></i> Save Investigation Outcome
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="p-3 bg-light rounded-3 border small text-muted">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Analyzed At:</span>
+                            <span class="text-dark fw-semibold">{{ tx.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Time Offset:</span>
+                            <span class="text-dark fw-semibold">{{ "%.1f"|format(tx.time_offset) }}s</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

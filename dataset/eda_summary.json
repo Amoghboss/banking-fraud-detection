@@ -1,0 +1,40 @@
+{
+    "total_transactions": 284807,
+    "total_features": 31,
+    "missing_values": 0,
+    "duplicate_rows": 1081,
+    "legitimate_transactions": 284315,
+    "fraudulent_transactions": 492,
+    "fraud_percentage": 0.1727,
+    "legitimate_percentage": 99.8273,
+    "amount_stats": {
+        "legit": {
+            "mean": 88.29102242231328,
+            "std": 250.10509222589243,
+            "median": 22.0,
+            "max": 25691.16,
+            "min": 0.0
+        },
+        "fraud": {
+            "mean": 122.21132113821139,
+            "std": 256.6832882977121,
+            "median": 9.25,
+            "max": 2125.87,
+            "min": 0.0
+        }
+    },
+    "top_positive_correlations": {
+        "V11": 0.1549,
+        "V4": 0.1334,
+        "V2": 0.0913,
+        "V21": 0.0404,
+        "V19": 0.0348
+    },
+    "top_negative_correlations": {
+        "V17": -0.3265,
+        "V14": -0.3025,
+        "V12": -0.2606,
+        "V10": -0.2169,
+        "V16": -0.1965
+    }
+}

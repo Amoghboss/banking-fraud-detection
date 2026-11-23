@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction Surveillance History{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between pb-3 mb-4 border-bottom gap-2">
+        <div>
+            <h2 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-primary"></i>
+                Transaction Surveillance History
+            </h2>
+            <p class="text-muted small mb-0">Audit log of all analyzed banking events and fraud risk classifications</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('reports.export_csv') }}" class="btn btn-outline-success btn-sm fw-semibold">
+                <i class="fa-solid fa-file-excel me-1"></i> Export to CSV
+            </a>
+            <a href="{{ url_for('transactions.index') }}" class="btn btn-primary btn-sm fw-semibold" style="background-color: #1e3a8a; border-color: #1e3a8a;">
+                <i class="fa-solid fa-plus me-1"></i> New Analysis
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter and Search Toolbar -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('transactions.history') }}" class="row g-2 align-items-center">
+                <!-- Search Box -->
+                <div class="col-md-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" class="form-control" name="search" placeholder="Search by Tx ID..." value="{{ search }}">
+                    </div>
+                </div>
+
+                <!-- Risk Filter -->
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm" name="risk">
+                        <option value="">All Risk Levels</option>
+                        <option value="Low" {% if risk_filter == 'Low' %}selected{% endif %}>Low Risk (&lt;20%)</option>
+                        <option value="Medium" {% if risk_filter == 'Medium' %}selected{% endif %}>Medium Risk (20-50%)</option>
+                        <option value="High" {% if risk_filter == 'High' %}selected{% endif %}>High Risk (50-80%)</option>
+                        <option value="Critical" {% if risk_filter == 'Critical' %}selected{% endif %}>Critical Risk (&ge;80%)</option>
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm" name="status">
+                        <option value="">All Classifications</option>
+                        <option value="Legitimate" {% if status_filter == 'Legitimate' %}selected{% endif %}>Legitimate Only</option>
+                        <option value="Fraudulent" {% if status_filter == 'Fraudulent' %}selected{% endif %}>Fraudulent Only</option>
+                    </select>
+                </div>
+
+                <!-- Investigation Filter -->
+                <div class="col-md-3">
+                    <select class="form-select form-select-sm" name="investigation">
+                        <option value="">All Investigation States</option>
+                        <option value="Pending Review" {% if investigation_filter == 'Pending Review' %}selected{% endif %}>Pending Review</option>
+                        <option value="Confirmed Fraud" {% if investigation_filter == 'Confirmed Fraud' %}selected{% endif %}>Confirmed Fraud</option>
+                        <option value="False Positive" {% if investigation_filter == 'False Positive' %}selected{% endif %}>False Positive</option>
+                        <option value="Resolved" {% if investigation_filter == 'Resolved' %}selected{% endif %}>Resolved</option>
+                    </select>
+                </div>
+
+                <!-- Filter Actions -->
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1 fw-semibold">
+                        Filter
+                    </button>
+                    <a href="{{ url_for('transactions.history') }}" class="btn btn-light border btn-sm text-secondary">
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sentinel mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Amount ($)</th>
+                            <th>Prediction</th>
+                            <th>Fraud Probability</th>
+                            <th>Risk Level</th>
+                            <th>Investigation State</th>
+                            <th>Analyzed Time</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in pagination.items %}
+                        <tr>
+                            <td>
+                                <code class="text-primary fw-bold">{{ tx.transaction_id }}</code>
+                            </td>
+                            <td class="fw-semibold">${{ "%.2f"|format(tx.amount) }}</td>
+                            <td>
+                                {% if tx.is_fraud %}
+                                    <span class="badge bg-danger text-white"><i class="fa-solid fa-triangle-exclamation me-1"></i> Fraud</span>
+                                {% else %}
+                                    <span class="badge bg-success text-white"><i class="fa-solid fa-circle-check me-1"></i> Legit</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height: 6px; width: 60px;">
+                                        <div class="progress-bar {% if tx.fraud_probability > 0.5 %}bg-danger{% else %}bg-success{% endif %}" style="width: {{ tx.fraud_probability * 100 }}%"></div>
+                                    </div>
+                                    <span class="small fw-semibold">{{ "%.1f"|format(tx.fraud_probability * 100) }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ tx.risk_level|lower }} px-2 py-1">{{ tx.risk_level }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-secondary border">{{ tx.investigation_status }}</span>
+                            </td>
+                            <td class="small text-muted">{{ tx.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td class="text-end">
+                                <a href="{{ url_for('transactions.results', id=tx.id) }}" class="btn btn-outline-primary btn-sm py-1 px-2">
+                                    <i class="fa-solid fa-eye me-1"></i> View Details
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-folder-open fs-2 mb-2 d-block text-secondary"></i>
+                                No transaction records match your query filters.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">
+                Showing page {{ pagination.page }} of {{ pagination.pages }} ({{ pagination.total }} records total)
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('transactions.history', page=pagination.prev_num, search=search, risk=risk_filter, status=status_filter, investigation=investigation_filter) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">{{ pagination.page }}</span>
+                    </li>
+
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('transactions.history', page=pagination.next_num, search=search, risk=risk_filter, status=status_filter, investigation=investigation_filter) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
