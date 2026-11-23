@@ -16,10 +16,13 @@ def create_app(config_name='default'):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     
-    # Ensure instance and upload folders exist
-    Path(app.config['UPLOAD_FOLDER']).mkdir(parents=True, exist_ok=True)
-    Path(app.config['REPORTS_DIR']).mkdir(parents=True, exist_ok=True)
-    Path(app.config['DB_PATH']).parent.mkdir(parents=True, exist_ok=True)
+    # Ensure instance and upload folders exist safely
+    try:
+        Path(app.config['UPLOAD_FOLDER']).mkdir(parents=True, exist_ok=True)
+        Path(app.config['REPORTS_DIR']).mkdir(parents=True, exist_ok=True)
+        Path(app.config['DB_PATH']).parent.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        print(f"[*] Read-only filesystem detected, skipping directory creation: {e}")
     
     # Initialize Database
     db.init_app(app)
@@ -72,8 +75,11 @@ def create_app(config_name='default'):
 
     # Auto-initialize database tables and seed admin user on startup
     with app.app_context():
-        db.create_all()
-        seed_database()
+        try:
+            db.create_all()
+            seed_database()
+        except Exception as e:
+            print(f"[*] Database startup warning: {e}")
         
     return app
 

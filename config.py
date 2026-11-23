@@ -4,18 +4,31 @@ from pathlib import Path
 # Base Directory of the Project
 BASE_DIR = Path(__file__).resolve().parent
 
+# Detect Vercel or Serverless Read-Only Filesystem
+IS_SERVERLESS = (
+    os.environ.get('VERCEL') == '1' or 
+    bool(os.environ.get('AWS_LAMBDA_FUNCTION_NAME')) or
+    os.environ.get('SERVERLESS') == '1'
+)
+
 class Config:
     """Base application configuration."""
-    # Security Key
     SECRET_KEY = os.environ.get('SECRET_KEY', 'banking-fraud-sentinel-defense-key-2026-secure-random')
     
-    # Database Configuration (SQLite with SQLAlchemy)
-    DB_PATH = BASE_DIR / 'database' / 'banking_fraud.db'
+    # Database Configuration (Writable /tmp for serverless, persistent database/ for container)
+    if IS_SERVERLESS:
+        DB_PATH = Path('/tmp') / 'banking_fraud.db'
+        UPLOAD_FOLDER = Path('/tmp') / 'uploads'
+        REPORTS_DIR = Path('/tmp') / 'reports_export'
+    else:
+        DB_PATH = BASE_DIR / 'database' / 'banking_fraud.db'
+        UPLOAD_FOLDER = BASE_DIR / 'dataset' / 'uploads'
+        REPORTS_DIR = BASE_DIR / 'reports_export'
+
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', f'sqlite:///{DB_PATH}')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Upload Configurations
-    UPLOAD_FOLDER = BASE_DIR / 'dataset' / 'uploads'
     MAX_CONTENT_LENGTH = 32 * 1024 * 1024  # 32 Megabytes max CSV size
     ALLOWED_EXTENSIONS = {'csv'}
     
